@@ -1,0 +1,233 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to HTML Converter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f0f2f5;
+        font-family: Arial, sans-serif;
+      }
+
+      .main-header {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .main-header h1 {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+      }
+
+      .main-header p {
+        font-size: 1.1rem;
+        margin: 0;
+        opacity: 0.9;
+      }
+
+      .converter-box {
+        background: white;
+        border-radius: 10px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .converter-box h3 {
+        color: #333;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+
+      .btn-custom {
+        background-color: #28a745;
+        border: none;
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+
+      .btn-custom:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+        color: white;
+      }
+
+      .ck-editor__editable_inline {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        min-height: 300px !important;
+        padding: 15px !important;
+        border: 2px solid #ddd !important;
+        border-radius: 8px !important;
+        font-size: 16px !important;
+      }
+
+      .ck-editor__editable_inline:focus {
+        border-color: #007bff !important;
+      }
+
+      .ck.ck-editor__main > .ck-editor__editable {
+        color: #333333 !important;
+        background-color: #ffffff !important;
+      }
+
+      .html-textarea {
+        background-color: #f8f9fa;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        min-height: 300px;
+        resize: vertical;
+      }
+
+      .html-textarea:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+      }
+
+      .success-message {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-top: 15px;
+        display: none;
+      }
+
+      @media (max-width: 768px) {
+        .main-header h1 {
+          font-size: 1.8rem;
+        }
+
+        .converter-box {
+          padding: 20px;
+          margin-bottom: 25px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="main-header">
+      <div class="container">
+        <h1><i class="bi bi-code-slash"></i> Text to HTML Converter</h1>
+        <p>Convert your text to HTML and HTML back to text easily</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-6">
+          <div class="converter-box">
+            <h3>
+              <i class="bi bi-pencil-square text-primary"></i> Text Editor
+            </h3>
+            <form method="post">
+              {% csrf_token %}
+              <textarea id="editor"></textarea>
+            </form>
+            <div class="d-grid mt-3">
+              <button
+                type="button"
+                class="btn btn-custom"
+                onclick="TextConvert()"
+              >
+                <i class="bi bi-arrow-right"></i> Convert to HTML
+              </button>
+            </div>
+            <div class="success-message" id="text-success">
+              <i class="bi bi-check-circle"></i> Successfully converted to HTML!
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="converter-box">
+            <h3><i class="bi bi-code text-success"></i> HTML Output</h3>
+            <textarea
+              class="form-control html-textarea"
+              id="htmldata"
+              placeholder="Your HTML code will appear here..."
+              rows="12"
+            ></textarea>
+            <div class="d-grid mt-3">
+              <button
+                type="button"
+                class="btn btn-custom"
+                onclick="HTMLConvert()"
+              >
+                <i class="bi bi-arrow-left"></i> Convert to Text
+              </button>
+            </div>
+            <div class="success-message" id="html-success">
+              <i class="bi bi-check-circle"></i> Successfully converted to text!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+      let myEditor = null;
+
+      ClassicEditor.create(document.querySelector("#editor"))
+        .then((editor) => {
+          myEditor = editor;
+        })
+        .catch((error) => {
+          console.error("CKEditor load error:", error);
+        });
+
+      function showSuccessMessage(id) {
+        const message = document.getElementById(id);
+        message.style.display = "block";
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 2000);
+      }
+
+      function TextConvert() {
+        if (myEditor) {
+          const htmlContent = myEditor.getData();
+          document.getElementById("htmldata").value = htmlContent;
+          showSuccessMessage("text-success");
+        } else {
+          alert("Editor not initialized");
+        }
+      }
+
+      function HTMLConvert() {
+        if (myEditor) {
+          const htmlData = document.getElementById("htmldata").value;
+          myEditor.setData(htmlData);
+          showSuccessMessage("html-success");
+        } else {
+          alert("Editor not initialized");
+        }
+      }
+    </script>
+  </body>
+</html>
